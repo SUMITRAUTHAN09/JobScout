@@ -1,12 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const navLinks = [
   { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
   { label: "Search Jobs", href: "#search" },
   { label: "Tips", href: "#tips" },
   { label: "Contact", href: "#contact" },
@@ -29,18 +28,24 @@ export default function Navbar() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "glass border-b border-white/5 shadow-2xl shadow-black/20" : ""
+          scrolled
+            ? "glass border-b border-white/5 shadow-2xl shadow-black/20"
+            : ""
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <a href="#" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6C63FF] to-[#00D4FF] flex items-center justify-center glow-sm group-hover:scale-110 transition-transform">
-                <Zap size={16} className="text-white" fill="white" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden glow-sm group-hover:scale-110 transition-transform flex-shrink-0">
+                <img
+                  src="./logo.jpg"
+                  alt="Logo"
+                  className="w-full h-full object-cover object-center"
+                />
               </div>
               <span className="font-semibold text-[15px] tracking-tight text-white">
-                Career<span className="gradient-text-2">AI</span>
+                Job<span className="gradient-text-2">Scout</span>
               </span>
             </a>
 

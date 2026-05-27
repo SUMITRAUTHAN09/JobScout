@@ -49,7 +49,7 @@ export default function Hero() {
 
       {/* Floating dashboard cards */}
       <div className="absolute inset-0 hidden lg:block pointer-events-none">
-        <FloatingCard
+        {/* <FloatingCard
           className="top-[22%] left-[6%] w-52"
           delay={0.2}
         >
@@ -67,7 +67,7 @@ export default function Hero() {
             </div>
             <span className="text-[10px] font-medium text-[#6C63FF]">97%</span>
           </div>
-        </FloatingCard>
+        </FloatingCard> */}
 
         <FloatingCard
           className="top-[18%] right-[6%] w-48"
@@ -75,10 +75,10 @@ export default function Hero() {
         >
           <div className="flex items-center gap-1.5 mb-1">
             <Sparkles size={12} className="text-[#00D4FF]" />
-            <span className="text-[11px] text-[#00D4FF] font-medium">AI Match Found</span>
+            <span className="text-[11px] text-[#00D4FF] font-medium">AI match</span>
           </div>
-          <p className="text-xs text-white font-medium">React Developer at Linear</p>
-          <p className="text-[10px] text-[var(--text-secondary)] mt-1">Remote · Full-time</p>
+          <p className="text-xs text-white font-medium">JSearch Engine</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1">Remote · Full-time </p>
         </FloatingCard>
 
         <FloatingCard
@@ -87,10 +87,10 @@ export default function Hero() {
         >
           <div className="flex items-center gap-1.5 mb-2">
             <Globe size={12} className="text-[#FF6B9D]" />
-            <span className="text-[11px] text-[var(--text-secondary)]">Career pages scanned</span>
+            <span className="text-[11px] text-[var(--text-secondary)]">For </span>
           </div>
-          <p className="text-2xl font-bold text-white">2,847</p>
-          <p className="text-[10px] text-green-400 mt-1">↑ 124 today</p>
+          <p className="text-2xl font-bold text-white">Latest Update</p>
+          <p className="text-[10px] text-green-400 mt-1">Scan career pages</p>
         </FloatingCard>
 
         <FloatingCard
@@ -99,10 +99,10 @@ export default function Hero() {
         >
           <div className="flex items-center gap-1.5 mb-2">
             <Zap size={12} className="text-[#6C63FF]" fill="#6C63FF" />
-            <span className="text-[11px] text-[var(--text-secondary)]">Jobs found today</span>
+            <span className="text-[11px] text-[var(--text-secondary)]">At</span>
           </div>
-          <p className="text-2xl font-bold text-white">438</p>
-          <p className="text-[10px] text-[#00D4FF] mt-1">From 89 companies</p>
+          <p className="text-2xl font-bold text-white">JobScout</p>
+          <p className="text-[10px] text-[#00D4FF] mt-1">Jobs found today</p>
         </FloatingCard>
       </div>
 

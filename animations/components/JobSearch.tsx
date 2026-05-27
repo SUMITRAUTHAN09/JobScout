@@ -23,16 +23,58 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { fetchLiveJobs, type LiveJob } from "../../lib/jobsapi";
 import LocationPicker from "./LocationPicker";
+import VideoModal from "./Videomodal";
 
 // ─── Predefined skills list ───────────────────────────────────
 const SKILL_OPTIONS = [
-  "JavaScript", "TypeScript", "React", "Next.js", "Vue.js", "Angular",
-  "Node.js", "Express", "Python", "Django", "FastAPI", "Java", "Spring",
-  "Go", "Rust", "C++", "C#", ".NET", "Ruby", "Rails", "PHP", "Laravel",
-  "Swift", "Kotlin", "Flutter", "React Native", "AWS", "Azure", "GCP",
-  "Docker", "Kubernetes", "Terraform", "CI/CD", "Git", "SQL", "PostgreSQL",
-  "MongoDB", "Redis", "GraphQL", "REST API", "Machine Learning", "AI",
-  "Data Science", "Pandas", "TensorFlow", "PyTorch", "Figma", "UI/UX",
+  "JavaScript",
+  "TypeScript",
+  "React",
+  "Next.js",
+  "Vue.js",
+  "Angular",
+  "Node.js",
+  "Express",
+  "Python",
+  "Django",
+  "FastAPI",
+  "Java",
+  "Spring",
+  "Go",
+  "Rust",
+  "C++",
+  "C#",
+  ".NET",
+  "Ruby",
+  "Rails",
+  "PHP",
+  "Laravel",
+  "Swift",
+  "Kotlin",
+  "Flutter",
+  "React Native",
+  "AWS",
+  "Azure",
+  "GCP",
+  "Docker",
+  "Kubernetes",
+  "Terraform",
+  "CI/CD",
+  "Git",
+  "SQL",
+  "PostgreSQL",
+  "MongoDB",
+  "Redis",
+  "GraphQL",
+  "REST API",
+  "Machine Learning",
+  "AI",
+  "Data Science",
+  "Pandas",
+  "TensorFlow",
+  "PyTorch",
+  "Figma",
+  "UI/UX",
 ];
 
 // ─── Experience options ───────────────────────────────────────
@@ -55,7 +97,10 @@ const AIThinkingStep = ({ label, done }: { label: string; done: boolean }) => (
     {done ? (
       <CheckCircle2 size={13} className="text-green-400 flex-shrink-0" />
     ) : (
-      <Loader2 size={13} className="text-[#6C63FF] animate-spin flex-shrink-0" />
+      <Loader2
+        size={13}
+        className="text-[#6C63FF] animate-spin flex-shrink-0"
+      />
     )}
     <span>{label}</span>
   </motion.div>
@@ -85,7 +130,7 @@ const SkillsMultiSelect = ({
 
   const filtered = SKILL_OPTIONS.filter(
     (s) =>
-      s.toLowerCase().includes(filter.toLowerCase()) && !selected.includes(s)
+      s.toLowerCase().includes(filter.toLowerCase()) && !selected.includes(s),
   );
 
   const toggleSkill = (skill: string) => {
@@ -393,7 +438,7 @@ export default function JobSearch() {
   const applyFiltersAndSort = (
     jobs: LiveJob[],
     sKey: SortKey,
-    remote: boolean
+    remote: boolean,
   ) => {
     let filtered = remote ? jobs.filter((j) => j.isRemote) : jobs;
     return sortJobs(filtered, sKey);
@@ -434,9 +479,9 @@ export default function JobSearch() {
         role,
         skillsString,
         experience,
-        location,   // ← was being passed but ignored in jobsapi.ts before
+        location, // ← was being passed but ignored in jobsapi.ts before
         apiKey.trim(),
-        3           // ← 3 pages × ~10 jobs = ~30 results
+        3, // ← 3 pages × ~10 jobs = ~30 results
       );
 
       await stepsP;
@@ -449,7 +494,7 @@ export default function JobSearch() {
       setError(
         err instanceof Error
           ? err.message
-          : "Search failed. Check your API key and try again."
+          : "Search failed. Check your API key and try again.",
       );
     } finally {
       setIsSearching(false);
@@ -509,7 +554,9 @@ export default function JobSearch() {
             className="text-4xl md:text-5xl font-semibold tracking-tight mb-4"
           >
             Find Your{" "}
-            <span className="font-serif italic gradient-text">Perfect Role</span>
+            <span className="font-serif italic gradient-text">
+              Perfect Role
+            </span>
           </motion.h2>
 
           <motion.p
@@ -518,10 +565,11 @@ export default function JobSearch() {
             transition={{ delay: 0.2 }}
             className="text-[var(--text-secondary)] text-lg"
           >
-            Real-time jobs fetched directly from company career pages — worldwide.
+            Real-time jobs fetched directly from company career pages —
+            worldwide.
+            <VideoModal />
           </motion.p>
         </div>
-
         {/* Search Panel */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -554,8 +602,7 @@ export default function JobSearch() {
                     className="text-[#6C63FF] hover:underline"
                   >
                     rapidapi.com → JSearch → Subscribe Free
-                  </a>{" "}
-                  (200 calls/month free)
+                  </a>
                 </p>
                 <input
                   type="text"
@@ -668,7 +715,7 @@ export default function JobSearch() {
                         label={step}
                         done={stepsDone.includes(i)}
                       />
-                    ) : null
+                    ) : null,
                   )}
                 </motion.div>
               )}
@@ -690,7 +737,9 @@ export default function JobSearch() {
                 className="text-red-400 flex-shrink-0 mt-0.5"
               />
               <div>
-                <p className="text-sm text-red-400 font-medium">Search failed</p>
+                <p className="text-sm text-red-400 font-medium">
+                  Search failed
+                </p>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   {error}
                 </p>
@@ -811,4 +860,4 @@ export default function JobSearch() {
       </div>
     </section>
   );
-} 
+}
