@@ -2,183 +2,314 @@
 
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import {
+  AlertCircle,
   Briefcase,
   CheckCircle2,
+  ChevronDown, ChevronUp,
   Clock,
   Code2,
+  DollarSign,
   ExternalLink,
+  Filter,
+  Globe,
+  Key,
   Loader2,
   MapPin,
   Search,
+  SortAsc,
   Sparkles,
 } from "lucide-react";
 import { useRef, useState } from "react";
-import { filterJobs, mockJobs, type Job } from "../../lib/jobs";
+import { fetchLiveJobs, type LiveJob } from "../../lib/jobsApi";
+import LocationPicker from "./LocationPicker";
 
+// ─── AI thinking step pill ────────────────────────────────────
 const AIThinkingStep = ({ label, done }: { label: string; done: boolean }) => (
   <motion.div
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
     className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"
   >
-    {done ? (
-      <CheckCircle2 size={13} className="text-green-400 flex-shrink-0" />
-    ) : (
-      <Loader2 size={13} className="text-[#6C63FF] animate-spin flex-shrink-0" />
-    )}
+    {done
+      ? <CheckCircle2 size={13} className="text-green-400 flex-shrink-0" />
+      : <Loader2    size={13} className="text-[#6C63FF] animate-spin flex-shrink-0" />
+    }
     <span>{label}</span>
   </motion.div>
 );
 
-const JobCard = ({ job, index }: { job: Job; index: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-    className="group gradient-border glass glass-hover rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
-  >
-    {/* Glow */}
-    <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#6C63FF]/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+// ─── Single job card ──────────────────────────────────────────
+const JobCard = ({ job, index }: { job: LiveJob; index: number }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: Math.min(index * 0.04, 0.6),   // cap delay so 200 cards don't stagger forever
+        duration: 0.45,
+        ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+      }}
+      className="group glass glass-hover rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden border border-white/5 hover:border-white/12"
+    >
+      {/* glow */}
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#6C63FF]/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-    <div className="flex items-start justify-between mb-4 relative">
-      <div className="flex items-center gap-3">
-        {/* Logo */}
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#6C63FF]/30 to-[#00D4FF]/20 flex items-center justify-center text-sm font-bold text-white border border-white/10 flex-shrink-0">
-          {job.logo}
+      {/* top row */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C63FF]/30 to-[#00D4FF]/20 flex items-center justify-center text-xs font-bold text-white border border-white/10 flex-shrink-0">
+            {job.logo}
+          </div>
+          <div>
+            <p className="font-semibold text-white text-sm leading-tight">{job.company}</p>
+            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 flex items-center gap-1">
+              <MapPin size={10} />
+              {job.location}
+              {job.isRemote && (
+                <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] bg-green-500/10 text-green-400 border border-green-500/20">
+                  Remote
+                </span>
+              )}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-medium text-white text-sm">{job.company}</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{job.location}</p>
+
+        {/* match badge */}
+        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold flex-shrink-0 ${
+          job.matchPercent >= 90
+            ? "bg-green-500/15 text-green-400 border border-green-500/20"
+            : job.matchPercent >= 70
+            ? "bg-[#6C63FF]/15 text-[#6C63FF] border border-[#6C63FF]/20"
+            : "bg-white/5 text-[var(--text-secondary)] border border-white/10"
+        }`}>
+          <Sparkles size={9} />
+          {job.matchPercent}%
         </div>
       </div>
 
-      {/* Match badge */}
-      <div
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0
-          ${
-            job.matchPercent >= 90
-              ? "bg-green-500/15 text-green-400 border border-green-500/20"
-              : job.matchPercent >= 80
-              ? "bg-[#6C63FF]/15 text-[#6C63FF] border border-[#6C63FF]/20"
-              : "bg-white/5 text-[var(--text-secondary)] border border-white/10"
-          }`}
-      >
-        <Sparkles size={10} />
-        {job.matchPercent}% match
+      {/* role */}
+      <h3 className="text-sm font-semibold text-white mb-2 leading-snug">{job.role}</h3>
+
+      {/* match bar */}
+      <div className="mb-3">
+        <div className="h-0.5 w-full rounded-full bg-white/5 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${job.matchPercent}%` }}
+            transition={{ delay: 0.4, duration: 0.7, ease: "easeOut" }}
+            className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] to-[#00D4FF]"
+          />
+        </div>
       </div>
-    </div>
 
-    {/* Role */}
-    <h3 className="text-base font-semibold text-white mb-3">{job.role}</h3>
+      {/* skills */}
+      {job.skills.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {job.skills.slice(0, 4).map((s: string) => (
+            <span key={s} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/5 text-[var(--text-secondary)] border border-white/5">
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
 
-    {/* Match bar */}
-    <div className="mb-4">
-      <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${job.matchPercent}%` }}
-          transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] to-[#00D4FF]"
-        />
+      {/* meta */}
+      <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-[var(--text-muted)] mb-3">
+        <span className="flex items-center gap-1"><Clock size={10} />{job.postedTime}</span>
+        <span className="flex items-center gap-1"><Briefcase size={10} />{job.type}</span>
+        {job.salary !== "Not disclosed" && (
+          <span className="flex items-center gap-1 text-green-400"><DollarSign size={10} />{job.salary}</span>
+        )}
+        {job.experience !== "Not specified" && (
+          <span className="flex items-center gap-1"><Clock size={10} />{job.experience}</span>
+        )}
       </div>
-    </div>
 
-    {/* Skills */}
-    <div className="flex flex-wrap gap-1.5 mb-4">
-      {job.skills.slice(0, 4).map((skill: string) => (
-        <span
-          key={skill}
-          className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/5 text-[var(--text-secondary)] border border-white/5"
+      {/* expandable description */}
+      {job.description && (
+        <div className="mb-3">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-white transition-colors"
+          >
+            {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {expanded ? "Hide" : "View"} description
+          </button>
+          <AnimatePresence>
+            {expanded && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-1.5 text-[11px] text-[var(--text-secondary)] leading-relaxed"
+              >
+                {job.description}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* actions */}
+      <div className="flex items-center gap-2 pt-3 border-t border-white/5">
+        <a
+          href={job.applyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 btn-primary flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium"
         >
-          {skill}
-        </span>
-      ))}
-    </div>
+          <ExternalLink size={13} />
+          Apply Now
+        </a>
+        <a
+          href={job.careerPageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-[var(--text-secondary)] hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
+        >
+          <Globe size={12} />
+          Careers
+        </a>
+      </div>
+    </motion.div>
+  );
+};
 
-    {/* Meta */}
-    <div className="flex items-center gap-4 text-xs text-[var(--text-muted)] mb-4">
-      <span className="flex items-center gap-1">
-        <Clock size={11} />
-        {job.postedTime}
-      </span>
-      <span className="flex items-center gap-1">
-        <Briefcase size={11} />
-        {job.type}
-      </span>
-      <span className="flex items-center gap-1">
-        <MapPin size={11} />
-        {job.experience}
-      </span>
-    </div>
-
-    {/* Actions */}
-    <div className="flex items-center gap-2 pt-4 border-t border-white/5">
-      <a
-        href={job.careerPageUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium"
-      >
-        <ExternalLink size={14} />
-        Apply Now
-      </a>
-      <a
-        href={job.careerPageUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="px-4 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
-      >
-        Career Page
-      </a>
-    </div>
-  </motion.div>
-);
-
-const steps = [
+// ─── Steps ────────────────────────────────────────────────────
+const STEPS = [
   "Parsing your requirements...",
-  "Scanning 2,800+ career pages...",
+  "Fetching live jobs from career pages...",
   "Running AI skill matching...",
-  "Ranking results by fit...",
+  "Ranking all results by fit...",
 ];
 
+// ─── Sort options ─────────────────────────────────────────────
+type SortKey = "match" | "recent" | "company";
+function sortJobs(jobs: LiveJob[], key: SortKey): LiveJob[] {
+  return [...jobs].sort((a, b) => {
+    if (key === "match")   return b.matchPercent - a.matchPercent;
+    if (key === "company") return a.company.localeCompare(b.company);
+    if (key === "recent") {
+      const toH = (t: string) => {
+        const mH = t.match(/(\d+)h/); if (mH) return +mH[1];
+        const mD = t.match(/(\d+)d/); if (mD) return +mD[1] * 24;
+        return 9999;
+      };
+      return toH(a.postedTime) - toH(b.postedTime);
+    }
+    return 0;
+  });
+}
+
+// ─── Main component ───────────────────────────────────────────
 export default function JobSearch() {
-  const [role, setRole] = useState("");
-  const [skills, setSkills] = useState("");
+  const [role,       setRole]       = useState("");
+  const [skills,     setSkills]     = useState("");
   const [experience, setExperience] = useState("");
+  const [location,   setLocation]   = useState("");
+  const [apiKey,     setApiKey]     = useState("");
+  const [showKey,    setShowKey]    = useState(false);
+  const [maxPages,   setMaxPages]   = useState(10);   // 10 pages ≈ 100 jobs; 20 ≈ 200
+
   const [isSearching, setIsSearching] = useState(false);
-  const [stepsDone, setStepsDone] = useState<number[]>([]);
+  const [stepsDone,   setStepsDone]   = useState<number[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [results, setResults] = useState<Job[] | null>(null);
+  const [results,     setResults]     = useState<LiveJob[] | null>(null);
+  const [displayed,   setDisplayed]   = useState<LiveJob[]>([]);
+  const [error,       setError]       = useState<string | null>(null);
+  const [sortKey,     setSortKey]     = useState<SortKey>("match");
+  const [filterRemote, setFilterRemote] = useState(false);
+  const [page,        setPage]        = useState(1);
+  const PAGE_SIZE = 24;
+
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const handleSearch = async () => {
-    if (!role && !skills && !experience) return;
-    setIsSearching(true);
-    setResults(null);
-    setStepsDone([]);
-    setCurrentStep(0);
+  // pagination helpers
+  const paginate = (jobs: LiveJob[], p: number) =>
+    jobs.slice(0, p * PAGE_SIZE);
 
-    for (let i = 0; i < steps.length; i++) {
+  const applyFiltersAndSort = (jobs: LiveJob[], sKey: SortKey, remote: boolean) => {
+    let filtered = remote ? jobs.filter((j) => j.isRemote) : jobs;
+    return sortJobs(filtered, sKey);
+  };
+
+  const runSteps = async () => {
+    for (let i = 0; i < STEPS.length; i++) {
       setCurrentStep(i);
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 650));
       setStepsDone((prev) => [...prev, i]);
     }
-
-    const filtered = filterJobs(mockJobs, role, skills, experience);
-    await new Promise((r) => setTimeout(r, 300));
-    setResults(filtered);
-    setIsSearching(false);
-    setCurrentStep(-1);
   };
+
+  const handleSearch = async () => {
+    if (!apiKey.trim()) {
+      setError("Please enter your RapidAPI key to search live jobs.");
+      return;
+    }
+    if (!role && !skills && !location) {
+      setError("Enter at least a job role, skill, or location.");
+      return;
+    }
+
+    setIsSearching(true);
+    setResults(null);
+    setDisplayed([]);
+    setError(null);
+    setStepsDone([]);
+    setCurrentStep(0);
+    setPage(1);
+
+    const stepsP = runSteps();
+    try {
+      const jobs = await fetchLiveJobs(role, skills, experience, location, apiKey.trim(), maxPages);
+      await stepsP;
+      const sorted = applyFiltersAndSort(jobs, sortKey, filterRemote);
+      setResults(sorted);
+      setDisplayed(paginate(sorted, 1));
+    } catch (err) {
+      await stepsP;
+      setError(err instanceof Error ? err.message : "Search failed. Check your API key and try again.");
+    } finally {
+      setIsSearching(false);
+      setCurrentStep(-1);
+    }
+  };
+
+  const handleSortChange = (key: SortKey) => {
+    setSortKey(key);
+    if (!results) return;
+    const sorted = applyFiltersAndSort(results, key, filterRemote);
+    setResults(sorted);
+    setDisplayed(paginate(sorted, page));
+  };
+
+  const handleRemoteToggle = () => {
+    const next = !filterRemote;
+    setFilterRemote(next);
+    if (!results) return;
+    const sorted = applyFiltersAndSort(results, sortKey, next);
+    setResults(sorted);
+    setPage(1);
+    setDisplayed(paginate(sorted, 1));
+  };
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    setDisplayed(paginate(results || [], nextPage));
+  };
+
+  const hasMore = results ? displayed.length < results.length : false;
 
   return (
     <section id="search" className="relative py-28 overflow-hidden" ref={ref}>
-      {/* BG */}
       <div className="absolute inset-0 grid-pattern opacity-30" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-1 bg-gradient-to-r from-transparent via-[#6C63FF]/30 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-px bg-gradient-to-r from-transparent via-[#6C63FF]/30 to-transparent" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Header */}
         <div className="text-center mb-12">
           <motion.div
@@ -186,104 +317,165 @@ export default function JobSearch() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-4"
           >
-            <span className="text-xs text-[#6C63FF] font-medium">AI Job Search</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 pulse-glow" />
+            <span className="text-xs text-[#6C63FF] font-medium">Live Job Search</span>
           </motion.div>
+
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-semibold tracking-tight mb-4"
           >
-            Discover Your{" "}
-            <span className="font-serif italic gradient-text">
-              Perfect Role
-            </span>
+            Find Your{" "}
+            <span className="font-serif italic gradient-text">Perfect Role</span>
           </motion.h2>
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.2 }}
             className="text-[var(--text-secondary)] text-lg"
           >
-            Tell our AI what you&apos;re looking for — it handles the rest.
+            Real-time jobs fetched directly from company career pages — worldwide.
           </motion.p>
         </div>
 
-        {/* Search panel */}
+        {/* Search Panel */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="glass rounded-3xl p-6 md:p-8 mb-8 glow relative overflow-hidden"
+          className="glass rounded-3xl p-6 md:p-8 mb-6 glow relative overflow-hidden"
         >
-          {/* Decorative gradient */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#6C63FF]/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#00D4FF]/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#6C63FF]/8 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          {/* API Key row */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Key size={13} className="text-[#6C63FF]" />
+              <span className="text-xs font-medium text-[var(--text-secondary)]">RapidAPI Key</span>
+              {apiKey && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Set ✓</span>}
+            </div>
+            <button
+              onClick={() => setShowKey(!showKey)}
+              className="text-xs text-[#6C63FF] hover:underline"
+            >
+              {showKey ? "Hide" : apiKey ? "Change key" : "Enter key"}
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showKey && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-5"
+              >
+                <div className="glass rounded-xl p-4 border border-[#6C63FF]/20 mb-1">
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    Get free key →{" "}
+                    <a
+                      href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#6C63FF] hover:underline"
+                    >
+                      rapidapi.com → JSearch → Subscribe Free
+                    </a>
+                    {" "}(200 calls/month free)
+                  </p>
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Paste your RapidAPI key..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 transition-all"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Inputs — 2 rows: role+skills+experience | location+pages */}
+          <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {/* Role */}
-            <div className="group">
-              <label className="text-xs text-[var(--text-muted)] mb-2 block flex items-center gap-1.5">
-                <Briefcase size={11} />
-                Job Role
+            <div>
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Briefcase size={11} /> Job Role
               </label>
               <input
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="e.g. Frontend Developer"
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 focus:bg-white/8 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 transition-all"
               />
             </div>
 
             {/* Skills */}
             <div>
-              <label className="text-xs text-[var(--text-muted)] mb-2 block flex items-center gap-1.5">
-                <Code2 size={11} />
-                Skills
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Code2 size={11} /> Skills
               </label>
               <input
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
-                placeholder="e.g. React, Next.js, TypeScript"
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 focus:bg-white/8 transition-all"
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="e.g. React, Node.js, TypeScript"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 transition-all"
               />
             </div>
 
             {/* Experience */}
             <div>
-              <label className="text-xs text-[var(--text-muted)] mb-2 block flex items-center gap-1.5">
-                <Clock size={11} />
-                Experience
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Clock size={11} /> Experience
               </label>
               <input
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="e.g. 2 Years"
-                className="w-full bg-white/5 border border-white/8 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 focus:bg-white/8 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-[var(--text-muted)] focus:border-[#6C63FF]/50 transition-all"
               />
+            </div>
+
+            {/* Location — country picker */}
+            <LocationPicker value={location} onChange={setLocation} />
+
+            {/* Result volume */}
+            <div>
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Filter size={11} /> Results volume
+              </label>
+              <select
+                value={maxPages}
+                onChange={(e) => setMaxPages(+e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#6C63FF]/50 transition-all appearance-none"
+              >
+                <option value={5}  className="bg-[#0d0d14]">~50 jobs  (5 pages)</option>
+                <option value={10} className="bg-[#0d0d14]">~100 jobs (10 pages)</option>
+                <option value={15} className="bg-[#0d0d14]">~150 jobs (15 pages)</option>
+                <option value={20} className="bg-[#0d0d14]">~200 jobs (20 pages)</option>
+              </select>
             </div>
           </div>
 
+          {/* Search button + steps */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <button
               onClick={handleSearch}
               disabled={isSearching}
-              className="btn-primary flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+              className="btn-primary flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSearching ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search size={16} />
-                  Search with AI
-                </>
-              )}
+              {isSearching
+                ? <><Loader2 size={16} className="animate-spin" />Searching...</>
+                : <><Search size={16} />Search Live Jobs</>
+              }
             </button>
 
-            {/* AI thinking steps */}
             <AnimatePresence>
               {isSearching && (
                 <motion.div
@@ -292,14 +484,10 @@ export default function JobSearch() {
                   exit={{ opacity: 0 }}
                   className="flex flex-col gap-1.5"
                 >
-                  {steps.map((step, i) =>
-                    i <= currentStep ? (
-                      <AIThinkingStep
-                        key={step}
-                        label={step}
-                        done={stepsDone.includes(i)}
-                      />
-                    ) : null
+                  {STEPS.map((step, i) =>
+                    i <= currentStep
+                      ? <AIThinkingStep key={step} label={step} done={stepsDone.includes(i)} />
+                      : null
                   )}
                 </motion.div>
               )}
@@ -307,40 +495,106 @@ export default function JobSearch() {
           </div>
         </motion.div>
 
+        {/* Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-6 glass rounded-xl p-4 border border-red-500/20 flex items-start gap-3"
+            >
+              <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-400 font-medium">Search failed</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{error}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Results */}
         <AnimatePresence>
           {results !== null && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-[var(--text-secondary)]">
-                  <span className="text-white font-semibold">{results.length}</span>{" "}
-                  jobs found matching your profile
-                </p>
-                <div className="flex items-center gap-1.5 text-xs text-[#4ADE80]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] pulse-glow" />
-                  Live results
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+
+              {/* Results toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Showing{" "}
+                    <span className="text-white font-semibold">{displayed.length}</span>
+                    {" "}of{" "}
+                    <span className="text-white font-semibold">{results.length}</span>
+                    {" "}live jobs
+                    {role     && <span> for <span className="text-[#6C63FF]">{role}</span></span>}
+                    {location && <span> in <span className="text-[#00D4FF]">{location}</span></span>}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Remote toggle */}
+                  <button
+                    onClick={handleRemoteToggle}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      filterRemote
+                        ? "bg-green-500/15 text-green-400 border-green-500/20"
+                        : "border-white/10 text-[var(--text-secondary)] hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    <Globe size={11} />
+                    Remote only
+                  </button>
+
+                  {/* Sort */}
+                  <div className="flex items-center gap-1 glass rounded-lg p-1">
+                    <SortAsc size={11} className="text-[var(--text-muted)] ml-1" />
+                    {(["match","recent","company"] as SortKey[]).map((k) => (
+                      <button
+                        key={k}
+                        onClick={() => handleSortChange(k)}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all capitalize ${
+                          sortKey === k
+                            ? "bg-[#6C63FF] text-white"
+                            : "text-[var(--text-secondary)] hover:text-white"
+                        }`}
+                      >
+                        {k}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
+              {/* Grid */}
               {results.length === 0 ? (
                 <div className="glass rounded-2xl p-12 text-center">
-                  <p className="text-[var(--text-secondary)] mb-2">
-                    No jobs found for your query.
-                  </p>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Try broader keywords or different skills.
-                  </p>
+                  <p className="text-[var(--text-secondary)] mb-2">No jobs found.</p>
+                  <p className="text-sm text-[var(--text-muted)]">Try different keywords or a broader location.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {results.map((job: Job, i: number) => (
-                    <JobCard key={job.id} job={job} index={i} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {displayed.map((job: LiveJob, i: number) => (
+                      <JobCard key={job.id} job={job} index={i} />
+                    ))}
+                  </div>
+
+                  {/* Load more */}
+                  {hasMore && (
+                    <div className="mt-10 flex flex-col items-center gap-2">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {results.length - displayed.length} more jobs available
+                      </p>
+                      <button
+                        onClick={loadMore}
+                        className="btn-primary flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-medium"
+                      >
+                        Load more jobs
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </motion.div>
           )}
