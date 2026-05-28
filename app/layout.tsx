@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CareerAI — Find Hidden Jobs From Company Career Pages",
+  title: "JobScout — Find Hidden Jobs From Company Career Pages", //this is the main title
   description:
     "AI-powered job discovery that searches official company career pages to find fresh opportunities tailored to your skills.",
 };
